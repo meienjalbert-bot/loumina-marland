@@ -1,0 +1,12 @@
+services:
+  server:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+    image: loumina/server:dev
+    container_name: loumina_server
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

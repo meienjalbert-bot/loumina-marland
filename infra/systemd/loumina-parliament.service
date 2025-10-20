@@ -1,0 +1,12 @@
+[Unit]
+Description=Loumina Parliament (rootless compose)
+
+[Service]
+WorkingDirectory=%h/loumina-marland
+ExecStart=/usr/bin/docker compose -f infra/compose/compose.pi.yml up -d
+ExecStop=/usr/bin/docker compose -f infra/compose/compose.pi.yml down
+Restart=on-failure
+TimeoutStartSec=0
+
+[Install]
+WantedBy=default.target
