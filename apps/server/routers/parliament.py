@@ -1,39 +1,33 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
 import uuid
-
+import os
 from agents.archiviste import propose_sources
-from agents.analyste import propose_answer
-from agents.securite import review_answer
 
 router = APIRouter()
 
 
-class Ask(BaseModel):
+class AskReq(BaseModel):
     query: str
-    mode: Optional[str] = "answer"  # "answer" | "plan"
+    mode: Optional[str] = "answer"
+    max_cost: Optional[float] = None
+    k: int = 5
+    alpha: float = 0.6
+    half_life_days: float = float(os.getenv("LOUMINA_FRESHNESS_HALFLIFE", "30"))
 
 
-@router.post("/ask")
-def parliament_ask(body: Ask) -> Dict[str, Any]:
+@router.post("/parliament/ask")
+def ask(req: AskReq) -> Dict[str, Any]:
     trace_id = str(uuid.uuid4())
-
-    # 1) Archiviste : récup squelettes de sources (stub)
-    sources = propose_sources(body.query)
-
-    # 2) Analyste : proposition de réponse (synthèse + citations)
-    draft = propose_answer(body.query, sources)
-
-    # 3) Sécurité : contre-lecture & score
-    reviewed = review_answer(draft)
-
-    # 4) Agrégation simple
-    score = max(0.0, 1.0 - reviewed.get("risk", 0.0))
+    sources = propose_sources(
+        req.query, k=req.k, alpha=req.alpha, half_life_days=req.half_life_days
+    )
+    votes = [{"agent": "Archiviste", "score": s["scores"]["final"]} for s in sources]
     return {
         "trace_id": trace_id,
-        "answer": reviewed["answer"],
-        "sources": reviewed["sources"],
-        "votes": {"score": score, "risk": reviewed.get("risk", 0.0)},
-        "audit": {"agents": ["archiviste", "analyste", "securite"]},
+        "answer": f"Propositions (hybride, alpha={req.alpha}, t½={req.half_life_days} j).",
+        "sources": sources,
+        "votes": votes,
+        "audit_trace_id": trace_id,
     }

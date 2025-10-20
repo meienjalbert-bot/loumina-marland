@@ -8,11 +8,8 @@ services:
     container_name: loumina_server
     environment:
       - PYTHONUNBUFFERED=1
-      - LOUMINA_METRICS_WINDOW=200
-      - LOUMINA_METRICS_EVERY=10
     ports:
       - "${LOUMINA_PORT:-18080}:8080"
     volumes:
       - /home/medhi/loumina-data:/data:ro
-      - /home/medhi/loumina-state:/app/state
     restart: unless-stopped
